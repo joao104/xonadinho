@@ -3,52 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha Página Simples</title>
+    <title>Julia é linda</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
             text-align: center;
-            padding: 20px;
-            background-color: white;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
+            margin-top: 100px;
+            background-color: pink;
+            overflow: hidden;
+            position: relative;
         }
+
         h1 {
-            color: #333;
+            font-size: 3rem;
         }
-        p {
-            color: #666;
-            font-size: 18px;
+
+        button {
+            font-size: 1.5rem;
+            padding: 15px 30px;
+            margin: 10px;
+            cursor: pointer;
         }
-        a {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 10px 20px;
-            text-decoration: none;
-            color: white;
-            background-color: #007BFF;
-            border-radius: 5px;
-            transition: background-color 0.3s;
+
+        #button-no {
+            position: absolute;
+            transition: left 0.3s, top 0.3s;
         }
-        a:hover {
-            background-color: #0056b3;
+
+        .emoji {
+            position: absolute;
+            font-size: 24px;
+            animation: fall 5s linear infinite;
+        }
+
+        @keyframes fall {
+            from {
+                transform: translateY(-100px);
+            }
+            to {
+                transform: translateY(100vh);
+            }
         }
     </style>
+    <script>
+        function moveNoButton() {
+            const noButton = document.getElementById("button-no");
+            const x = Math.random() * (window.innerWidth - noButton.offsetWidth);
+            const y = Math.random() * (window.innerHeight - noButton.offsetHeight);
+
+            noButton.style.left = x + "px";
+            noButton.style.top = y + "px";
+        }
+
+        function confirmMessage() {
+            alert("Você está absolutamente certo, Julia é linda!");
+        }
+
+        function createEmojis() {
+            const emojis = ['❤️', '😂', '🎉', '🌟', '😎', '💃', '💖', '✨', '🎈', '🍭'];
+            const emojiContainer = document.createElement('div');
+            document.body.appendChild(emojiContainer);
+
+            setInterval(() => {
+                const emoji = document.createElement('div');
+                emoji.className = 'emoji';
+                emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                emoji.style.left = Math.random() * window.innerWidth + 'px';
+                emoji.style.top = '-50px';
+                emoji.style.fontSize = Math.random() * 24 + 24 + 'px';
+                emojiContainer.appendChild(emoji);
+
+                setTimeout(() => {
+                    emoji.remove();
+                }, 5000);
+            }, 300);
+        }
+
+        window.onload = createEmojis;
+    </script>
 </head>
 <body>
-    <div class="container">
-        <h1>Bem-vindo à Minha Página</h1>
-        <p>Esta é uma página HTML simples. Você pode personalizá-la conforme desejar.</p>
-        <a href="https://www.example.com" target="_blank">Clique Aqui</a>
-    </div>
+    <h1>mirelly ea mais Linda do mundo?</h1>
+    <button id="button-yes" onclick="confirmMessage()">Sim</button>
+    <button id="button-no" onmouseover="moveNoButton()">Não</button>
 </body>
 </html>
