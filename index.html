@@ -1,142 +1,285 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>adm secreto</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quiz Bíblico</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background-color: pink;
-      overflow: hidden;
+    * {
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
     }
 
-    h1 {
-      font-size: 2rem;
+    body, html {
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background: #0077cc; /* Fundo azul sólido */
+      color: white;
+      text-align: center;
       padding: 20px;
     }
 
-    .button-container {
-      position: relative;
-      height: 300px;
+    .intro-toast, .notification {
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      text-align: center;
+      z-index: 9999;
+      width: 300px;
+      animation: fadeIn 0.5s ease;
+      color: black;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translate(-50%, -60%); }
+      to { opacity: 1; transform: translate(-50%, -50%); }
+    }
+
+    .intro-toast img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+      object-fit: cover;
+      border: 2px solid #66a6ff;
+    }
+
+    input {
+      padding: 10px;
+      margin-top: 10px;
+      width: 80%;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
     }
 
     button {
-      font-size: 1.2rem;
-      padding: 12px 25px;
-      margin: 10px;
-      cursor: pointer;
+      padding: 10px 20px;
+      margin-top: 10px;
       border: none;
-      border-radius: 8px;
-      z-index: 2;
+      background: #4CAF50;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.3s;
     }
 
-    #button-no {
-      position: absolute;
-      transition: left 0.2s ease, top 0.2s ease;
+    button:hover {
+      background: #45a049;
     }
 
-    .emoji {
-      position: absolute;
-      font-size: 24px;
-      animation: fall 5s linear infinite;
-      z-index: 1;
+    #quiz-container {
+      display: none;
+      margin-top: 20px;
     }
 
-    @keyframes fall {
-      from {
-        transform: translateY(-100px);
-      }
-      to {
-        transform: translateY(100vh);
-      }
+    .option {
+      background: white;
+      color: black;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 1rem;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s;
+      width: 80%;
+    }
+
+    .option:hover {
+      background: #66a6ff;
+      color: white;
+    }
+
+    #verse {
+      margin-top: 20px;
+      font-size: 1rem;
+      color: yellow;
+    }
+
+    #next-button {
+      margin-top: 20px;
+    }
+
+    #timer {
+      font-size: 1.5rem;
+      margin-top: 10px;
+      color: white;
     }
   </style>
 </head>
 <body>
-  <h1>Mirelly é a mais linda do mundo?</h1>
 
-  <div class="button-container">
-    <button id="button-yes" onclick="confirmMessage()">Sim</button>
-    <button id="button-no">Não</button>
-  </div>
+<!-- Tela de introdução -->
+<div class="intro-toast" id="intro">
+  <img src="imagens/fotojm.jpg" alt="Sua Foto">
+  <h1>💃 Calma, filho de Abraão!</h1>
+  <p>Primeiro digite seu nome:</p>
+  <input type="text" id="playerName" placeholder="Seu nome">
+  <br>
+  <button onclick="startQuiz()">Começar</button>
+</div>
 
-  <script>
-    const noButton = document.getElementById("button-no");
+<!-- Notificação intermediária -->
+<div class="notification" id="notification" style="display: none;">
+  <h2>📖 Já leu o versículo, filho de Deus?</h2>
+  <p id="verse-text"></p>
+  <button onclick="continueQuiz()">Continuar</button>
+</div>
 
-    function confirmMessage() {
-      alert("Você está absolutamente certo, Mirelly ea mais  linda do mundoo!");
+<!-- Container do quiz -->
+<div id="quiz-container">
+  <h2 id="quiz-title"></h2>
+  <div id="question"></div>
+  <div id="options"></div>
+  <div id="verse"></div>
+  <div id="timer"></div>
+  <button id="next-button" onclick="showNotification()" style="display:none;">Próxima pergunta</button>
+</div>
+
+<script>
+  let playerName = '';
+  let currentQuestion = 0;
+  let score = 0;
+  let timer;
+  let timeRemaining = 8; // Tempo de 8 segundos para responder cada pergunta
+  const questions = [
+    {
+      question: "Além de Caim, qual era o nome do terceiro filho de Adão e Eva mencionado em Gênesis?",
+      options: ["Sete", "Enos", "Abel", "Adão Jr."],
+      answer: "Sete",
+      verse: "Gênesis 4:25"
+    },
+    {
+      question: "O que significa a expressão hebraica 'tohu wa bohu' usada para descrever a terra antes da criação em Gênesis 1:2?",
+      options: ["Vazia e desolada", "Perfeita e cheia", "Boa e limpa", "Escura e fria"],
+      answer: "Vazia e desolada",
+      verse: "Gênesis 1:2"
+    },
+    {
+      question: "Qual foi a maldição específica proferida contra a serpente após enganar Eva?",
+      options: ["Seria amaldiçoada a morte", "Andaria sobre o ventre", "Seria banida da terra", "Ficaria sem descanso"],
+      answer: "Andaria sobre o ventre",
+      verse: "Gênesis 3:14"
+    },
+    {
+      question: "Quem foram os descendentes de Caim mencionados por sua inovação cultural (criação de tendas, instrumentos musicais, etc.)?",
+      options: ["Enos", "Lameque", "Sete", "Caim e seus filhos"],
+      answer: "Lameque",
+      verse: "Gênesis 4:19-22"
+    },
+    {
+      question: "Qual foi o nome da esposa de Isaque e qual era seu parentesco com Abraão?",
+      options: ["Raquel, sobrinha", "Rebeca, prima", "Sara, irmã", "Ester, cunhada"],
+      answer: "Rebeca, prima",
+      verse: "Gênesis 24:15"
+    },
+    // Continue com as perguntas como mencionado...
+  ];
+
+  function startQuiz() {
+    playerName = document.getElementById('playerName').value.trim();
+    if (playerName === '') {
+      alert('Por favor, digite seu nome!');
+      return;
     }
+    document.getElementById('intro').style.display = 'none';
+    document.getElementById('quiz-container').style.display = 'block';
+    document.getElementById('quiz-title').innerText = `Bem-vindo(a), ${playerName}! Vamos começar!`;
+    startTimer();
+    showQuestion();
+  }
 
-    function createEmojis() {
-      const emojis = ['❤️', '😂', '🎉', '🌟', '😎', '💃', '💖', '✨', '🎈', '🍭'];
-      const emojiContainer = document.createElement('div');
-      document.body.appendChild(emojiContainer);
-
-      setInterval(() => {
-        const emoji = document.createElement('div');
-        emoji.className = 'emoji';
-        emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-        emoji.style.left = Math.random() * window.innerWidth + 'px';
-        emoji.style.top = '-50px';
-        emoji.style.fontSize = Math.random() * 24 + 24 + 'px';
-        emojiContainer.appendChild(emoji);
-
-        setTimeout(() => emoji.remove(), 5000);
-      }, 300);
-    }
-
-    function moveNoButtonRandom() {
-      const container = document.querySelector(".button-container");
-      const maxX = container.clientWidth - noButton.offsetWidth;
-      const maxY = container.clientHeight - noButton.offsetHeight;
-      const x = Math.random() * maxX;
-      const y = Math.random() * maxY;
-
-      noButton.style.left = x + "px";
-      noButton.style.top = y + "px";
-    }
-
-    // Mobile (touch)
-    document.addEventListener("touchstart", (e) => {
-      const touch = e.touches[0];
-      if (!touch) return;
-
-      const rect = noButton.getBoundingClientRect();
-      const buffer = 80;
-
-      if (
-        touch.clientX > rect.left - buffer &&
-        touch.clientX < rect.right + buffer &&
-        touch.clientY > rect.top - buffer &&
-        touch.clientY < rect.bottom + buffer
-      ) {
-        moveNoButtonRandom();
+  function startTimer() {
+    timeRemaining = 8; // Agora o cronômetro é de 8 segundos
+    timer = setInterval(function() {
+      document.getElementById('timer').innerText = `Tempo restante: ${timeRemaining}s`;
+      timeRemaining--;
+      if (timeRemaining <= 0) {
+        clearInterval(timer);
+        showNotification();
       }
+    }, 1000);
+  }
+
+  function showQuestion() {
+    if (currentQuestion >= questions.length) {
+      endQuiz();
+      return;
+    }
+
+    const q = questions[currentQuestion];
+    document.getElementById('question').innerText = q.question;
+
+    const shuffledOptions = [...q.options].sort(() => 0.5 - Math.random());
+
+    const optionsDiv = document.getElementById('options');
+    optionsDiv.innerHTML = '';
+    shuffledOptions.forEach(option => {
+      const btn = document.createElement('button');
+      btn.className = 'option';
+      btn.innerText = option;
+      btn.onclick = () => selectAnswer(option);
+      optionsDiv.appendChild(btn);
     });
 
-    // Desktop (mouse)
-    document.addEventListener("mousemove", (e) => {
-      const rect = noButton.getBoundingClientRect();
-      const buffer = 100;
+    document.getElementById('verse').innerText = '';
+    document.getElementById('next-button').style.display = 'none';
+  }
 
-      if (
-        e.clientX > rect.left - buffer &&
-        e.clientX < rect.right + buffer &&
-        e.clientY > rect.top - buffer &&
-        e.clientY < rect.bottom + buffer
-      ) {
-        moveNoButtonRandom();
-      }
-    });
+  function selectAnswer(option) {
+    const q = questions[currentQuestion];
+    clearInterval(timer); // Parar o cronômetro quando a resposta for dada
 
-    window.onload = () => {
-      createEmojis();
-      moveNoButtonRandom();
-    };
-  </script>
+    if (option === q.answer) {
+      score += 10;
+      document.getElementById('verse').innerText = `✅ Correto! Versículo: ${q.verse}`;
+    } else {
+      document.getElementById('verse').innerText = `❌ Ops, errado! Versículo: ${q.verse}`;
+    }
+
+    document.getElementById('next-button').style.display = 'inline-block';
+  }
+
+  function showNotification() {
+    document.getElementById('quiz-container').style.display = 'none';
+    const currentQuestionData = questions[currentQuestion];
+    document.getElementById('verse-text').innerText = `Versículo: ${currentQuestionData.verse}`;
+    document.getElementById('notification').style.display = 'block';
+  }
+
+  function continueQuiz() {
+    document.getElementById('notification').style.display = 'none';
+    document.getElementById('quiz-container').style.display = 'block';
+    currentQuestion++;
+    startTimer();
+    showQuestion();
+  }
+
+  function endQuiz() {
+    document.getElementById('quiz-container').innerHTML = `
+      <h2>🏆 Parabéns, ${playerName}!</h2>
+      <p>Você fez ${score} pontos!</p>
+      <p>Fim do Quiz! 🙌</p>
+      <button onclick="restartQuiz()">Recomeçar</button>
+    `;
+  }
+
+  function restartQuiz() {
+    currentQuestion = 0;
+    score = 0;
+    document.getElementById('quiz-container').style.display = 'none';
+    document.getElementById('intro').style.display = 'block';
+    document.getElementById('playerName').value = '';
+  }
+</script>
+
 </body>
 </html>
