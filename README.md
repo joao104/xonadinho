@@ -1,152 +1,200 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eu Te Amo</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.6.2/css/bootstrap.min.css" rel="stylesheet">
-    
-    <style>
-        /* Estilo Geral */
-        body {
-            background: linear-gradient(to bottom, #ff9a9e, #fad0c4);
-            color: #161414;
-            font-family: 'Arial', sans-serif;
-            height: 100vh;
-            overflow: hidden;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-        .heart-container {
-            text-align: center;
-        }
-        /* Coração Grande */
-        .heart {
-            position: relative;
-            width: 100px;
-            height: 100px;
-            background-color: #ff4d4d;
-            transform: rotate(-45deg);
-            animation: heartbeat 1s infinite;
-            margin: 0 auto;
-        }
-        .heart::before,
-        .heart::after {
-            content: '';
-            position: absolute;
-            width: 100px;
-            height: 100px;
-            background-color: #ff4d4d;
-            border-radius: 50%;
-        }
-        .heart::before {
-            top: -50px;
-            left: 0;
-        }
-        .heart::after {
-            left: 50px;
-            top: 0;
-        }
-        @keyframes heartbeat {
-            0%, 100% {
-                transform: scale(1) rotate(-45deg);
-            }
-            50% {
-                transform: scale(1.2) rotate(-45deg);
-            }
-        }
-        .message {
-            margin-top: 20px;
-            font-size: 24px;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-        .btn-love {
-            margin-top: 30px;
-            background-color: #ff4d4d;
-            color: #151111;
-            border: none;
-            padding: 10px 20px;
-            font-size: 18px;
-            border-radius: 25px;
-            transition: all 0.3s;
-        }
-        .btn-love:hover {
-            background-color: #e63939;
-            transform: scale(1.1);
-        }
+import React, { useEffect, useState, useRef } from "react";
 
-        /* Corações Chovendo */
-        .falling-hearts {
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 0;
-        }
-        .falling-hearts span {
-            position: absolute;
-            display: block;
-            width: 15px;
-            height: 15px;
-            background: #ff4d4d;
-            clip-path: polygon(50% 0%, 100% 35%, 80% 100%, 50% 80%, 20% 100%, 0% 35%);
-            animation: fall 5s linear infinite;
-        }
+export default function ConviteCulto() {
+  const original = "C U L T O".replace(/ /g, ""); // palavra a ser desembaralhada
+  const letters = original.split("");
+
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  const [pool, setPool] = useState(() => shuffle(letters));
+  const [guess, setGuess] = useState([]);
+  const [done, setDone] = useState(false);
+  const [message, setMessage] = useState("");
+  const audioCtxRef = useRef(null);
+  const [playAllowed, setPlayAllowed] = useState(false);
+
+  useEffect(() => {
+    function onFirst() {
+      setPlayAllowed(true);
+      window.removeEventListener("pointerdown", onFirst);
+    }
+    window.addEventListener("pointerdown", onFirst);
+    return () => window.removeEventListener("pointerdown", onFirst);
+  }, []);
+
+  useEffect(() => {
+    if (guess.join("").toLowerCase() === original.toLowerCase()) {
+      setDone(true);
+      setMessage(`Parabéns! Agora que você descobriu a palavra secreta...`);
+      playRomanticMelody();
+    }
+  }, [guess]);
+
+  function pickLetter(index) {
+    if (done) return;
+    const letter = pool[index];
+    setPool((p) => p.filter((_, i) => i !== index));
+    setGuess((g) => [...g, letter]);
+  }
+
+  function removeFromGuess(index) {
+    if (done) return;
+    setGuess((g) => {
+      const newG = [...g];
+      const [removed] = newG.splice(index, 1);
+      setPool((p) => [...p, removed]);
+      return newG;
+    });
+  }
+
+  function resetGame() {
+    setPool(shuffle(letters));
+    setGuess([]);
+    setDone(false);
+    setMessage("");
+  }
+
+  function initAudio() {
+    if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtxRef.current;
+  }
+
+  function playTone(freq, duration = 0.4, when = 0) {
+    const ctx = initAudio();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = "sine";
+    o.frequency.value = freq;
+    g.gain.value = 0.001;
+    o.connect(g);
+    g.connect(ctx.destination);
+    const start = ctx.currentTime + when;
+    o.start(start);
+    g.gain.linearRampToValueAtTime(0.12, start + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+    o.stop(start + duration + 0.02);
+  }
+
+  function playRomanticMelody() {
+    if (!playAllowed) return;
+    initAudio();
+    const notes = [392, 330, 440, 523, 440, 392, 330, 392];
+    let time = 0;
+    notes.forEach((n) => {
+      playTone(n, 0.5, time);
+      time += 0.45;
+    });
+  }
+
+  const Confetti = () => (
+    <div className="pointer-events-none fixed inset-0 z-40">
+      <div className="absolute inset-0 overflow-hidden">
+        {Array.from({ length: 40 }).map((_, i) => (
+          <span
+            key={i}
+            className={`block w-3 h-6 rounded-sm absolute transform animate-fall`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `-10%`,
+              background: `hsl(${Math.random() * 360} 80% 60%)`,
+              animationDelay: `${Math.random() * 1}s`,
+              opacity: 0.95,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-pink-200 via-purple-200 to-yellow-200">
+      <div className="max-w-3xl w-full bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl p-6 border border-white/60">
+        <header className="flex items-center justify-between mb-4">
+          <h1 className="text-3xl font-extrabold tracking-tight text-pink-700">Desembaralhe a palavra secreta</h1>
+          <button
+            onClick={resetGame}
+            className="px-3 py-1 rounded-full bg-pink-600 text-white text-sm shadow hover:scale-105 transform transition"
+          >
+            Embaralhar de novo
+          </button>
+        </header>
+
+        <main className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <section className="p-4 rounded-xl bg-gradient-to-br from-white to-pink-50 border border-white/60">
+            <h2 className="text-lg font-bold text-pink-700 mb-2">Monte a palavra:</h2>
+
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              {Array.from({ length: letters.length }).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => removeFromGuess(i)}
+                  className={`w-12 h-12 flex items-center justify-center rounded-lg text-xl font-bold shadow-md transition transform ${
+                    guess[i] ? "bg-pink-100 text-pink-700" : "bg-white/50 text-gray-400"
+                  }`}
+                >
+                  {guess[i] ?? "—"}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              {pool.map((l, i) => (
+                <button
+                  key={i}
+                  onClick={() => pickLetter(i)}
+                  className="w-12 h-12 bg-white rounded-lg shadow flex items-center justify-center font-bold text-lg hover:scale-110 transition"
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <aside className="p-4 rounded-xl bg-gradient-to-br from-white to-purple-50 border border-white/60 flex flex-col items-center justify-center">
+            {!done ? (
+              <>
+                <p className="text-center text-sm text-gray-700 mb-4">Desembaralhe e descubra meu convite especial 💕</p>
+              </>
+            ) : (
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-pink-700 mb-2">Convite Especial 💖</h3>
+                <p className="mb-3">{message}</p>
+                <p className="mb-4 text-lg text-purple-700 font-semibold">Giovana, aceita ir comigo hoje ao culto de jovens? 🙏✨</p>
+                <div className="flex gap-2 justify-center">
+                  <button
+                    onClick={() => playRomanticMelody()}
+                    className="px-3 py-1 rounded-full bg-white border shadow"
+                  >
+                    Reproduzir música
+                  </button>
+                  <button onClick={resetGame} className="px-3 py-1 rounded-full bg-pink-600 text-white shadow">
+                    Jogar novamente
+                  </button>
+                </div>
+              </div>
+            )}
+          </aside>
+        </main>
+
+        <footer className="mt-6 text-center text-sm text-gray-600">Feito com 💖 para um convite muito especial</footer>
+      </div>
+
+      {done && <Confetti />}
+
+      <style>{`
         @keyframes fall {
-            0% {
-                transform: translateY(-100%) rotate(0deg);
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(100vh) rotate(360deg);
-                opacity: 0;
-            }
+          0% { transform: translateY(-10vh) rotate(0deg); opacity: 1 }
+          100% { transform: translateY(110vh) rotate(360deg); opacity: 0 }
         }
-
-        /* Gerar corações aleatórios */
-        .falling-hearts span:nth-child(1) { left: 10%; animation-duration: 4s; }
-        .falling-hearts span:nth-child(2) { left: 20%; animation-duration: 6s; }
-        .falling-hearts span:nth-child(3) { left: 30%; animation-duration: 4.5s; }
-        .falling-hearts span:nth-child(4) { left: 40%; animation-duration: 5.2s; }
-        .falling-hearts span:nth-child(5) { left: 50%; animation-duration: 6.5s; }
-        .falling-hearts span:nth-child(6) { left: 60%; animation-duration: 4.8s; }
-        .falling-hearts span:nth-child(7) { left: 70%; animation-duration: 5.6s; }
-        .falling-hearts span:nth-child(8) { left: 80%; animation-duration: 4.1s; }
-        .falling-hearts span:nth-child(9) { left: 90%; animation-duration: 6.2s; }
-        .falling-hearts span:nth-child(10) { left: 95%; animation-duration: 5.7s; }
-    </style>
-</head>
-<body>
-    <div class="falling-hearts">
-        <!-- Gerando os corações -->
-        <span></span><span></span><span></span><span></span><span></span>
-        <span></span><span></span><span></span><span></span><span></span>
+        .animate-fall { animation: fall 3.5s linear infinite; }
+      `}</style>
     </div>
-    <div class="heart-container">
-        <div class="heart"></div>
-        <div class="message"> <strong>KALINE E A MAIS LINDA DO MUNDO</strong> ❤️</div>
-        <button class="btn-love" onclick="showLove()">Clique para mais amor</button>
-    </div>
-
-    <!-- Optional JavaScript -->
-    <script>
-        function showLove() {
-            alert('JESUS TE AMA, E EU TAMBÉM ❤️');
-        }
-    </script>]<link rel="stylesheet" href="css/bootstrap.min.css">
-<script src="js/bootstrap.min.js"></script>
-
-
-
-
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
-</body>
-</html>
+  );
+}
